@@ -3,13 +3,11 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
+/* global camera */
+
 'use strict';
 
 $(function () {
-
-  var bound = function (value, interval) {
-    return Math.max(interval[0], Math.min(interval[1], value));
-  };
 
   var getColorAtOffset = function (data, offset) {
     return {
@@ -20,14 +18,24 @@ $(function () {
     };
   };
 
+  var setColorAtOffset = function (data, offset, color) {
+    data[offset] = color.red;
+    data[offset + 1] = color.green;
+    data[offset + 2] = color.blue;
+    data[offset + 3] = color.alpha;
+  };
+
   var onFrame = function (canvas) {
-    var rv = [];
-    var contrastFactor = 99197/33405;
+    var contrastFactor = 1.0;
 
     var context = canvas.getContext('2d');
     var canvasWidth = canvas.width;
     var canvasHeight = canvas.height;
+    console.log(canvasWidth, canvasHeight);
     var imageData = context.getImageData(0, 0, canvasWidth, canvasHeight);
+
+    var outContext = $('#tempResult')[0].getContext('2d');
+
 
     for (var y = 0; y < canvasHeight; y++) {
       for (var x = 0; x < canvasWidth; x++) {
@@ -37,36 +45,32 @@ $(function () {
 
         var color = getColorAtOffset(imageData.data, offset);
   
-        // increase the contrast of the image so that the ASCII representation looks better
-        // http://www.dfstudios.co.uk/articles/image-processing-algorithms-part-5/
-        var contrastedColor = {
-          red: bound(Math.floor((color.red - 128) * contrastFactor) + 128, [0, 255]),
-          green: bound(Math.floor((color.green - 128) * contrastFactor) + 128, [0, 255]),
-          blue: bound(Math.floor((color.blue - 128) * contrastFactor) + 128, [0, 255]),
-          alpha: color.alpha
-        };
-
         // calculate pixel brightness
         // http://stackoverflow.com/questions/596216/formula-to-determine-brightness-of-rgb-color
-        var brightness = (0.299 * contrastedColor.red + 0.587 * contrastedColor.green + 0.114 * contrastedColor.blue) / 255;
-        rv.push(brightness);
+        var brightness = (0.299 * color.red + 0.587 * color.green + 0.114 * color.blue) / 255;
+        brightness = Math.round(brightness * contrastFactor);
+        brightness = brightness * 255;
+        // Grey
+        var greyColor = {
+          red: brightness,
+          green: brightness,
+          blue: brightness,
+          alpha: color.alpha
+        };
+        setColorAtOffset(imageData.data, offset, greyColor);
       }
     }
-
-    console.log(rv);
+    outContext.putImageData(imageData, 0, 0);
   };
 
   camera.init({
-    width: 160, // default: 640
-    height: 120, // default: 480
-    mirror: true,  // default: false
-
     onFrame: onFrame,
 
     onSuccess: function() {
       // stream succesfully started, yay!
       console.log('Stream Started!');
       $('#info').slideUp();
+      $('#tempResult').fadeIn();
     },
 
     onError: function(error) {
