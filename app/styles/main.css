@@ -29,6 +29,13 @@ body {
 }
 
 
-#notSupported {
+#notSupported,
+#tempResult {
   display: none;
+}
+
+#tempResult {
+  display: none;
+  width: 640px;
+  height: 480px;
 }
