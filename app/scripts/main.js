@@ -3,11 +3,67 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-/* global camera */
+/* global camera, setColor, detectEdges, hough */
 
 'use strict';
 
 $(function () {
+
+  var capture = false;
+
+  $('#tempResult').click(function () {
+    console.log('Capturing!');
+    capture = !capture;
+    return false;
+  });
+
+  var houghResults = null;
+
+  var drawLines = function (canvas, context, houghFuncs, log) {
+    if (houghResults) {
+      context.strokeStyle = '#00FF00';
+      context.lineWidth = 2;
+      context.beginPath();
+
+      for (var result in houghResults.slice(0, 5)) {
+        var data = houghResults[result];
+        if (log) {
+          console.log(houghFuncs.format(data));
+        }
+        var parsed = houghFuncs.parse(data);
+        var rho = parsed[0];
+        var theta = parsed[1];
+
+        // TODO: 1) Why is rho so often 0?
+        var x = rho / Math.sin(theta);
+        var y = rho / Math.cos(theta);
+        if (theta === 0 || theta === 180) {
+          x = 0;
+        }
+        if (theta === 90) {
+          y = canvas.height;
+        }
+
+        if (log) {
+          console.log('Plotting ' + x + ',' + y);
+        }
+
+        if (x < 0) {
+          context.moveTo(0, y);
+          context.lineTo(canvas.width, canvas.width * y / -x + y);
+        } else if (y < 0) {
+          context.moveTo(x, 0);
+          context.lineTo(canvas.height * x / -y + x, canvas.height);
+        } else {
+          context.moveTo(x,0);
+          context.lineTo(0,y);
+        }
+
+      }
+      context.closePath();
+      context.stroke();
+    }
+  };
 
   var onFrame = function (canvas) {
     var context = canvas.getContext('2d');
@@ -18,25 +74,33 @@ $(function () {
     var outContext = $('#tempResult')[0].getContext('2d');
     var outData = outContext.getImageData(0, 0, canvasWidth, canvasHeight);
 
-    detectEdges(imageData, outData, canvasWidth, canvasHeight);
+    var houghFuncs = hough(canvasWidth, canvasHeight);
 
+    if (!capture) {
+      outContext.putImageData(imageData, 0, 0);
+      drawLines(canvas, outContext, houghFuncs);
+      return;
+    }
+    detectEdges(imageData, canvasWidth, canvasHeight, function (x, y, color, sum) {
+      var outColor = {
+        red: color.red,
+        green: Math.max(color.green, sum),
+        blue: color.blue,
+        alpha: color.alpha
+      };
+
+      setColor(outData.data, x, y, canvasWidth, outColor);
+      houghFuncs.accumulate(x, y, color, sum);
+    });
+    capture = !capture;
+    houghResults = houghFuncs.done();
     outContext.putImageData(outData, 0, 0);
-
-    // At this point, I've got the edges, so I should:
-    // 1) run the Hough Transform,
-    //   a) Create an accumulator array of π by sqrt(width^2 + height^2).
-    //   b) For each edge point,
-    //   c)   for each Θ between 0 and π,
-    //   d)     Calculate r = x*cos(Θ) + y*sin(Θ)
-    //   e)     Add one to the accumulator at Θ,r.
-    // 2) get the four brightest lines (four highest-valued points in the accumulator)
-    // 3) find their intersections, and
-    // 4) plot the four lines between their intersections!  :)
-
+    drawLines(canvas, outContext, houghFuncs, true);
   };
 
   camera.init({
     onFrame: onFrame,
+    fps: 2,
 
     onSuccess: function() {
       // stream succesfully started, yay!
