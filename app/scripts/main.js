@@ -92,7 +92,7 @@ $(function () {
       setColor(outData.data, x, y, canvasWidth, outColor);
       houghFuncs.accumulate(x, y, color, sum);
     });
-    capture = !capture;
+    // capture = !capture;
     houghResults = houghFuncs.done();
     outContext.putImageData(outData, 0, 0);
     drawLines(canvas, outContext, houghFuncs, true);
