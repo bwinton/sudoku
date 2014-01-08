@@ -25,4 +25,15 @@
     data[offset + 2] = color.blue;
     data[offset + 3] = color.alpha;
   };
+
+  window.getIntercepts = function (rho, theta, canvas, log) {
+    var x = rho * Math.sin(theta);
+    var y = rho * Math.cos(theta);
+    if (log) {
+      console.log('Plotting ' + rho + '@' + (theta/Math.PI*180) + ' as '+ x + ',' + y);
+    }
+    var x1 = x + y / rho * canvas.width;
+    var y1 = y + x / rho * canvas.height;
+    return [{x:x, y:y}, {x:x1, y:y1}];
+  };
 })();
