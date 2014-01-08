@@ -16,47 +16,49 @@
 // 3) find their intersections, and
 // 4) plot the four lines between their intersections!  :)
 
-// Todo: Precalculate the cosine and sine tables.
-
 (function () {
-  var thetaSteps = 72; // width.
-  var rhoBucket = 10; // height.
+  var thetaSteps = 180;
   var cos = [];
   var sin = [];
 
   for (var i = 0; i < thetaSteps; i++) {
-    var theta = i / thetaSteps * Math.PI;
+    var theta = ((i + 1) / thetaSteps - 0.5) * Math.PI;
     cos[i] = Math.cos(theta);
     sin[i] = Math.sin(theta);
   }
 
   var makeAccumulator = function (maxRho) {
-    var buffer = new ArrayBuffer(thetaSteps * maxRho);
-    return new Uint16Array(buffer);
+    return new Uint16Array(thetaSteps * maxRho);
+  };
+
+  var getArray = function (accumulator) {
+    var results = [];
+    for (var i = 0; i < accumulator.length; i++) {
+      results.push(accumulator[i]);
+    }
+    return results;
   };
 
   window.hough = function (canvasWidth, canvasHeight) {
-    var maxRho = Math.floor(Math.sqrt(canvasWidth*canvasWidth + canvasHeight*canvasHeight) / rhoBucket) + 1;
+    var maxRho = Math.floor(Math.sqrt(canvasWidth*canvasWidth + canvasHeight*canvasHeight) * 2);
     var accumulator = makeAccumulator(maxRho);
     var totalTime = 0;
     var count = 0;
 
-    var parse = function (result) {
-      var index = result[1];
-      var rho = Math.floor(index / thetaSteps) * rhoBucket;
-      var thetaIndex = index % thetaSteps;
-      var theta = thetaIndex / thetaSteps * Math.PI;
-      return [rho, theta];
-    };
-
     return {
-      accumulate: function (x, y, color, sum) {
+      accumulate: function (x, y, sum) {
         if (sum) {
           count++;
           var t1 = Date.now();
           for (var i = 0; i < thetaSteps; i++) {
-            var r = x * cos[i] + y * sin[i] / rhoBucket;
-            accumulator[Math.floor(r * thetaSteps + i)]++;
+            var r = x * cos[i] + y * sin[i];
+            var bucket = Math.floor(i * maxRho + (r + maxRho / 2));
+            // var theta = Math.round(((i + 1) / thetaSteps - 0.5) * 180);
+            // console.log('theta=' + theta,
+            //   'cos=' + cos[i], 'sin=' + sin[i], 'r=' + r,
+            //   'i=' + i, 'floor=' + i * maxRho,
+            //   'bucket=' + bucket);
+            accumulator[bucket]++;
           }
           var t2 = Date.now();
           totalTime += t2-t1;
@@ -64,26 +66,34 @@
       },
       done: function () {
         var t1 = Date.now();
-        var results = Array.apply( [], accumulator );
-        var t2 = Date.now();
-        results = results.map(function (e, i) {
-          return [e, i];
+        var results = getArray(accumulator).map(function (count, bucket) {
+          return [count, bucket];
+        }).filter(function (result) {
+          return result[0];
         }).sort(function(a, b) {
+          if (b[0] === a[0]) {
+            return b[1] - a[1];
+          }
           return b[0] - a[0];
+        }).map(function (result) {
+          var count = result[0];
+          var bucket = result[1];
+          var rho = (bucket % maxRho) - maxRho / 2;
+          var thetaIndex = Math.floor(bucket / maxRho);
+          var theta = ((thetaIndex + 1) / thetaSteps - 0.5) * Math.PI;
+          return {count: count, rho: rho, theta: theta};
         });
-        var t3 = Date.now();
-        console.log('Accumulator time: ' + (totalTime / count));
-        console.log('Done time:' + (t2 - t1) + ', ' + (t3 - t2));
+        var t2 = Date.now();
+        // console.log('Accumulator time: ' + (totalTime / count));
+        // console.log('Done time:' + (t2 - t1));
         return results;
       },
       format: function (result) {
-        var count = result[0];
-        var index = parse(result);
-        var rho = index[0];
-        var theta = Math.round(index[1] / Math.PI * 180);
-        return result[1] + ' (' + theta + 'deg x ' + rho + 'px) = ' + count + ' occurrences.';
-      },
-      parse: parse
+        var count = result.count;
+        var rho = result.rho;
+        var theta = Math.round((result.theta / Math.PI) * 180);
+        return ' (' + theta + 'deg x ' + rho + 'px) = ' + count + ' occurrences.';
+      }
     };
 
   };
