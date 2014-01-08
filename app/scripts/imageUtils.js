@@ -27,13 +27,59 @@
   };
 
   window.getIntercepts = function (rho, theta, canvas, log) {
-    var x = rho * Math.sin(theta);
-    var y = rho * Math.cos(theta);
+    var cos = Math.cos(theta);
+    var sin = Math.sin(theta);
+    var x = rho * cos;
+    var y = rho * sin;
     if (log) {
       console.log('Plotting ' + rho + '@' + (theta/Math.PI*180) + ' as '+ x + ',' + y);
+      console.log('cos=' + cos, 'sin=' + sin);
     }
-    var x1 = x + y / rho * canvas.width;
-    var y1 = y + x / rho * canvas.height;
-    return [{x:x, y:y}, {x:x1, y:y1}];
+
+    // calculate 0,y1; max,y2; x1,0; x2;max and
+    // pick the ones that are all positive!
+    var x0 = x + y / cos * sin;
+    var xMax = x - (canvas.height - y) / cos * sin;
+    var y0 = y + x / sin * cos;
+    var yMax = y - (canvas.width - x) / sin * cos;
+    if (log) {
+      console.log('Proposed X: (' + x0 + ',0) ' +
+                  '(' + xMax + ',' + canvas.height + ')');
+      console.log('Proposed Y: (0,' + y0 + ') ' +
+                  '(' + canvas.width + ',' + yMax + ')');
+    }
+
+    var top;
+    if (x0 >= 0 && x0 <= canvas.width) {
+      top = {x:x0, y:0};
+    } else if (xMax >= 0 && xMax <= canvas.width) {
+      top = {x:xMax, y:canvas.height};
+    }
+
+    var left;
+    if (y0 >= 0 && y0 <= canvas.width) {
+      left = {x:0, y:y0};
+    } else if (yMax >= 0 && yMax <= canvas.width) {
+      left = {x:canvas.width, y:yMax};
+    }
+
+    if (Math.round(cos * 10000000) === 0) {
+      // Handle horizontal lines.
+      top = {x:0, y:y};
+      left = {x:canvas.width, y:y};
+    }
+    if (Math.round(sin * 10000000) === 0) {
+      // Handle vertical lines.
+      top = {x:x, y:0};
+      left = {x:x, y:canvas.height};
+    }
+
+    if (log) {
+      console.log('Going with:', JSON.stringify([top, left]));
+    }
+
+    top = {x:Math.round(top.x), y:Math.round(top.y)};
+    left = {x:Math.round(left.x), y:Math.round(left.y)};
+    return [top, left];
   };
 })();

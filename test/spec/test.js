@@ -102,31 +102,45 @@ chai.use(function (_chai) {
   });
 
   describe('ImageUtil:', function () {
-    return false;
     var houghResults = null;
     houghResults = [
       // Rho can vary between 0? and 800 (a.k.a. √(640² + 480²))
       // Theta can vary between -89º to 90º.
-      {count:2, rho:300, theta:-90 / 180 * Math.PI},
-      {count:2, rho:300, theta:-45 / 180 * Math.PI},
-      {count:2, rho:300, theta:0 / 180 * Math.PI},
-      {count:2, rho:300, theta:45 / 180 * Math.PI},
-      {count:2, rho:300, theta:89 / 180 * Math.PI}
     ];
     var canvas = {width: 640, height: 480};
 
-    it('90º should be straight up and down', function () {
-      var intercepts = getIntercepts(300, Math.PI / 2, canvas, true);
+    // {count:2, rho:300, theta:-89 / 180 * Math.PI},
+    it('-89º should be straight across-ish', function () {
+      var intercepts = getIntercepts(300, -89 / 180 * Math.PI, canvas, true);
+      intercepts[0].should.be.like({x:0, y:300});
+      intercepts[1].should.be.like({x:canvas.width, y:300});
+    });
+
+    it('-45º should be like \\', function () {
+      var intercepts = getIntercepts(300, - Math.PI / 4, canvas);
+      intercepts[0].should.be.like({x:424, y:0});
+      intercepts[1].should.be.like({x:canvas.width, y:216});
+    });
+
+    it('0º should be straight up and down', function () {
+      var intercepts = getIntercepts(300, 0, canvas);
       intercepts[0].should.be.like({x:300, y:0});
       intercepts[1].should.be.like({x:300, y:canvas.height});
     });
 
-    it('180º should be straight across', function () {
-      var intercepts = getIntercepts(200, Math.PI, canvas, true);
-      intercepts[0].should.be.like({x:0, y:200});
-      intercepts[1].should.be.like({x:canvas.width, y:200});
+    it('45º should be like /', function () {
+      var intercepts = getIntercepts(300, Math.PI / 4, canvas);
+      intercepts[0].should.be.like({x:424, y:0});
+      intercepts[1].should.be.like({x:0, y:424});
     });
 
+    it('90º should be straight across', function () {
+      var intercepts = getIntercepts(300, Math.PI / 2, canvas);
+      intercepts[0].should.be.like({x:0, y:300});
+      intercepts[1].should.be.like({x:canvas.width, y:300});
+    });
+
+    return false;
 
   });
 })();
