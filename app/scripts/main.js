@@ -3,7 +3,7 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-/* global camera, setColor, detectEdges, hough */
+/* global camera, setColor, getIntercepts, detectEdges, hough */
 
 'use strict';
 
@@ -18,47 +18,26 @@ $(function () {
   });
 
   var houghResults = null;
+  houghResults = [
+    {count:2, rho:200, theta:90 / 180 * Math.PI},
+    {count:2, rho:200, theta:135 / 180 * Math.PI},
+    {count:2, rho:200, theta:180 / 180 * Math.PI},
+    {count:2, rho:200, theta:225 / 180 * Math.PI}
+  ];
 
-  var drawLines = function (canvas, context, houghFuncs, log) {
+  var drawLines = function (canvas, context) {
     if (houghResults) {
+      var width = canvas.width;
+      var height = canvas.height;
       context.strokeStyle = '#00FF00';
       context.lineWidth = 2;
       context.beginPath();
 
       for (var result in houghResults.slice(0, 5)) {
         var data = houghResults[result];
-        if (log) {
-          console.log(houghFuncs.format(data));
-        }
-        var parsed = houghFuncs.parse(data);
-        var rho = parsed[0];
-        var theta = parsed[1];
-
-        // TODO: 1) Why is rho so often 0?
-        var x = rho / Math.sin(theta);
-        var y = rho / Math.cos(theta);
-        if (theta === 0 || theta === 180) {
-          x = 0;
-        }
-        if (theta === 90) {
-          y = canvas.height;
-        }
-
-        if (log) {
-          console.log('Plotting ' + x + ',' + y);
-        }
-
-        if (x < 0) {
-          context.moveTo(0, y);
-          context.lineTo(canvas.width, canvas.width * y / -x + y);
-        } else if (y < 0) {
-          context.moveTo(x, 0);
-          context.lineTo(canvas.height * x / -y + x, canvas.height);
-        } else {
-          context.moveTo(x,0);
-          context.lineTo(0,y);
-        }
-
+        var intercepts = getIntercepts(data.rho, data.theta, {width:width, height:height});
+        context.moveTo(intercepts[0].x, intercepts[0].y);
+        context.lineTo(intercepts[1].x, intercepts[1].y);
       }
       context.closePath();
       context.stroke();
@@ -75,10 +54,28 @@ $(function () {
     var outData = outContext.getImageData(0, 0, canvasWidth, canvasHeight);
 
     var houghFuncs = hough(canvasWidth, canvasHeight);
+    var red = {
+      red: 255,
+      green: 0,
+      blue: 0,
+      alpha: 255
+    };
 
     if (!capture) {
+      for (var i = 0; i <= canvasHeight; i++) {
+        setColor(imageData.data, i, i, canvasWidth, red);
+        setColor(imageData.data, i, i+1, canvasWidth, red);
+      }
       outContext.putImageData(imageData, 0, 0);
-      drawLines(canvas, outContext, houghFuncs);
+      outContext.strokeStyle = '#0000FF';
+      outContext.lineWidth = 2;
+      outContext.beginPath();
+      outContext.moveTo(0,0);
+      outContext.lineTo(canvasWidth,canvasHeight);
+      outContext.closePath();
+      outContext.stroke();
+
+      drawLines(canvas, outContext);
       return;
     }
     detectEdges(imageData, canvasWidth, canvasHeight, function (x, y, color, sum) {
@@ -90,12 +87,16 @@ $(function () {
       };
 
       setColor(outData.data, x, y, canvasWidth, outColor);
-      houghFuncs.accumulate(x, y, color, sum);
+      // houghFuncs.accumulate(x, y, sum);
     });
     // capture = !capture;
-    houghResults = houghFuncs.done();
+    // houghResults = houghFuncs.done();
+    for (var j = 0; j < canvasHeight; j++) {
+      setColor(outData.data, j, j, canvasWidth, red);
+      setColor(outData.data, j, j+1, canvasWidth, red);
+    }
     outContext.putImageData(outData, 0, 0);
-    drawLines(canvas, outContext, houghFuncs, true);
+    drawLines(canvas, outContext);
   };
 
   camera.init({
