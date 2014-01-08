@@ -19,10 +19,11 @@ $(function () {
 
   var houghResults = null;
   houghResults = [
-    {count:2, rho:200, theta:90 / 180 * Math.PI},
-    {count:2, rho:200, theta:135 / 180 * Math.PI},
-    {count:2, rho:200, theta:180 / 180 * Math.PI},
-    {count:2, rho:200, theta:225 / 180 * Math.PI}
+    // {count:2, rho:200, theta:-89 / 180 * Math.PI},
+    {count:2, rho:200, theta:-45 / 180 * Math.PI},
+    {count:2, rho:200, theta:0 / 180 * Math.PI},
+    {count:2, rho:200, theta:45 / 180 * Math.PI},
+    {count:2, rho:200, theta:90 / 180 * Math.PI}
   ];
 
   var drawLines = function (canvas, context) {
@@ -33,9 +34,11 @@ $(function () {
       context.lineWidth = 2;
       context.beginPath();
 
-      for (var result in houghResults.slice(0, 5)) {
+      for (var result in houghResults) {
         var data = houghResults[result];
-        var intercepts = getIntercepts(data.rho, data.theta, {width:width, height:height});
+        var intercepts = getIntercepts(data.rho, data.theta, {width:width, height:height}, true);
+        console.log('Drawing line from (' + intercepts[0].x + ',' + intercepts[0].y + ') ' +
+                    'to (' + intercepts[1].x + ',' + intercepts[1].y + ').');
         context.moveTo(intercepts[0].x, intercepts[0].y);
         context.lineTo(intercepts[1].x, intercepts[1].y);
       }
@@ -67,14 +70,6 @@ $(function () {
         setColor(imageData.data, i, i+1, canvasWidth, red);
       }
       outContext.putImageData(imageData, 0, 0);
-      outContext.strokeStyle = '#0000FF';
-      outContext.lineWidth = 2;
-      outContext.beginPath();
-      outContext.moveTo(0,0);
-      outContext.lineTo(canvasWidth,canvasHeight);
-      outContext.closePath();
-      outContext.stroke();
-
       drawLines(canvas, outContext);
       return;
     }
@@ -89,6 +84,7 @@ $(function () {
       setColor(outData.data, x, y, canvasWidth, outColor);
       // houghFuncs.accumulate(x, y, sum);
     });
+    houghFuncs.done();
     // capture = !capture;
     // houghResults = houghFuncs.done();
     for (var j = 0; j < canvasHeight; j++) {

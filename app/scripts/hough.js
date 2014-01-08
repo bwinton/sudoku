@@ -42,30 +42,18 @@
   window.hough = function (canvasWidth, canvasHeight) {
     var maxRho = Math.floor(Math.sqrt(canvasWidth*canvasWidth + canvasHeight*canvasHeight) * 2);
     var accumulator = makeAccumulator(maxRho);
-    var totalTime = 0;
-    var count = 0;
 
     return {
       accumulate: function (x, y, sum) {
         if (sum) {
-          count++;
-          var t1 = Date.now();
           for (var i = 0; i < thetaSteps; i++) {
             var r = x * cos[i] + y * sin[i];
             var bucket = Math.floor(i * maxRho + (r + maxRho / 2));
-            // var theta = Math.round(((i + 1) / thetaSteps - 0.5) * 180);
-            // console.log('theta=' + theta,
-            //   'cos=' + cos[i], 'sin=' + sin[i], 'r=' + r,
-            //   'i=' + i, 'floor=' + i * maxRho,
-            //   'bucket=' + bucket);
             accumulator[bucket]++;
           }
-          var t2 = Date.now();
-          totalTime += t2-t1;
         }
       },
       done: function () {
-        var t1 = Date.now();
         var results = getArray(accumulator).map(function (count, bucket) {
           return [count, bucket];
         }).filter(function (result) {
@@ -83,9 +71,6 @@
           var theta = ((thetaIndex + 1) / thetaSteps - 0.5) * Math.PI;
           return {count: count, rho: rho, theta: theta};
         });
-        var t2 = Date.now();
-        // console.log('Accumulator time: ' + (totalTime / count));
-        // console.log('Done time:' + (t2 - t1));
         return results;
       },
       format: function (result) {

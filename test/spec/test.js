@@ -3,11 +3,11 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-/* global describe, it, hough */
+/* global chai, describe, it, hough, getIntercepts */
 
 'use strict';
 
-chai.use(function (_chai, utils) {
+chai.use(function (_chai) {
   var Assertion = _chai.Assertion;
   // language chain method
   Assertion.addMethod('like', function (expected) {
@@ -25,8 +25,6 @@ chai.use(function (_chai, utils) {
                obj.hasOwnProperty('y')) {
       obj.x.should.be.closeTo(expected.x, 0.0000000000001, 'x');
       obj.y.should.be.closeTo(expected.y, 0.0000000000001, 'y');
-    } else {
-      _super.call(this);
     }
   });
 });
@@ -48,6 +46,7 @@ chai.use(function (_chai, utils) {
         return houghFuncs.format(result);
       }).join('\n'));
     };
+    printResults([]);
 
     it('should calculate vertical lines', function () {
       var results = gatherResults([[630,10], [630,470]]);
