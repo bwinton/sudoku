@@ -17,61 +17,47 @@
 // 4) plot the four lines between their intersections!  :)
 
 (function () {
-  var thetaSteps = 180;
-  var cos = [];
-  var sin = [];
+  var thetaSteps = 90;
 
-  for (var i = 0; i < thetaSteps; i++) {
-    var theta = ((i + 1) / thetaSteps - 0.5) * Math.PI;
-    cos[i] = Math.cos(theta);
-    sin[i] = Math.sin(theta);
-  }
+  var myWorker = new Worker('scripts/houghWorker.js');
+  var houghContext;
+  var houghData;
 
-  var makeAccumulator = function (maxRho) {
-    return new Uint16Array(thetaSteps * maxRho);
-  };
-
-  var getArray = function (accumulator) {
-    var results = [];
-    for (var i = 0; i < accumulator.length; i++) {
-      results.push(accumulator[i]);
+  myWorker.onmessage = function (message) {
+    console.log('Called back by the worker!', message.data.type);
+    if (message.data.type === 'done') {
+      for (var i = 0; i < message.data.accumulator.length; i++) {
+        if (message.data.accumulator[i] >= 0xFF) {
+          message.data.accumulator[i] |= 0x77;
+        }
+        if (message.data.accumulator[i] >= 0xFFFF) {
+          message.data.accumulator[i] |= 0x7777;
+        }
+        message.data.accumulator[i] |= 0xFF000000;
+      }
+      houghData = new ImageData(
+        new Uint8ClampedArray(message.data.accumulator.buffer),
+        houghData.width, houghData.height);
+      houghContext.putImageData(houghData, 0, 0);
     }
-    return results;
   };
 
   window.hough = function (canvasWidth, canvasHeight) {
     var maxRho = Math.floor(Math.sqrt(canvasWidth*canvasWidth + canvasHeight*canvasHeight) * 2);
-    var accumulator = makeAccumulator(maxRho);
+    window.accums = [];
+
+    houghContext = $('#houghResult')[0].getContext('2d');
+    houghData = houghContext.getImageData(0, 0, maxRho, thetaSteps);
+    houghContext.putImageData(houghData, 0, 0);
+
+    myWorker.postMessage({type: 'start', maxRho: maxRho});
 
     return {
       accumulate: function (x, y, sum) {
-        if (sum) {
-          for (var i = 0; i < thetaSteps; i++) {
-            var r = x * cos[i] + y * sin[i];
-            var bucket = Math.floor(i * maxRho + (r + maxRho / 2));
-            accumulator[bucket]++;
-          }
-        }
+        myWorker.postMessage({type: 'accumulate', x: x, y: y, sum: sum});
       },
       done: function () {
-        var results = getArray(accumulator).map(function (count, bucket) {
-          return [count, bucket];
-        }).filter(function (result) {
-          return result[0];
-        }).sort(function(a, b) {
-          if (b[0] === a[0]) {
-            return b[1] - a[1];
-          }
-          return b[0] - a[0];
-        }).map(function (result) {
-          var count = result[0];
-          var bucket = result[1];
-          var rho = (bucket % maxRho) - maxRho / 2;
-          var thetaIndex = Math.floor(bucket / maxRho);
-          var theta = ((thetaIndex + 1) / thetaSteps - 0.5) * Math.PI;
-          return {count: count, rho: rho, theta: theta};
-        });
-        return results;
+        myWorker.postMessage({type: 'done'});
       },
       format: function (result) {
         var count = result.count;

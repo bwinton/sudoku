@@ -38,10 +38,10 @@
 
     // calculate 0,y1; max,y2; x1,0; x2;max and
     // pick the ones that are all positive!
-    var x0 = x + y / cos * sin;
-    var xMax = x - (canvas.height - y) / cos * sin;
-    var y0 = y + x / sin * cos;
-    var yMax = y - (canvas.width - x) / sin * cos;
+    var x0 = Math.round(x + y / cos * sin);
+    var xMax = Math.round(x - (canvas.height - y) / cos * sin);
+    var y0 = Math.round(y + x / sin * cos);
+    var yMax = Math.round(y - (canvas.width - x) / sin * cos);
     if (log) {
       console.log('Proposed X: (' + x0 + ',0) ' +
                   '(' + xMax + ',' + canvas.height + ')');
@@ -50,16 +50,16 @@
     }
 
     var top;
-    if (x0 >= 0 && x0 <= canvas.width) {
+    if (x0 >= 0) {
       top = {x:x0, y:0};
-    } else if (xMax >= 0 && xMax <= canvas.width) {
+    } else if (xMax >= 0) {
       top = {x:xMax, y:canvas.height};
     }
 
     var left;
-    if (y0 >= 0 && y0 <= canvas.width) {
+    if (y0 >= 0) {
       left = {x:0, y:y0};
-    } else if (yMax >= 0 && yMax <= canvas.width) {
+    } else if (yMax >= 0) {
       left = {x:canvas.width, y:yMax};
     }
 
@@ -74,12 +74,10 @@
       left = {x:x, y:canvas.height};
     }
 
-    if (log) {
+    if (log || !top || !left) {
       console.log('Going with:', JSON.stringify([top, left]));
     }
 
-    top = {x:Math.round(top.x), y:Math.round(top.y)};
-    left = {x:Math.round(left.x), y:Math.round(left.y)};
     return [top, left];
   };
 })();
