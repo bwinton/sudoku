@@ -9,15 +9,9 @@
     <title>sudoku</title>
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width">
-    <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
-    <!-- build:css styles/vendor.css -->
-    <!-- bower:css -->
-    <!-- endbower -->
-    <!-- endbuild -->
-    <!-- build:css(.tmp) styles/main.css -->
     <link rel="stylesheet" href="styles/main.css">
-    <!-- endbuild -->
-    <script src="bower_components/modernizr/modernizr.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js"></script>
 
   </head>
   <body>
@@ -30,34 +24,21 @@
       <h1 id="info">Please allow this page to access your camera.</h1>
       <h1 id="notSupported">Your browser does not support the Camera API.</h1>
     </div>
-
     <canvas id="tempResult" width="640" height="480"></canvas>
     <br>
     <canvas id="houghResult" width="1600" height="90" style="border: 1px solid black"></canvas>
 
 
-    <!-- build:js scripts/vendor.js -->
-    <!-- bower:js -->
-    <script src="bower_components/jquery/jquery.js"></script>
-    <script src="bower_components/camera/index.js"></script>
-    <!-- endbower -->
-    <!-- endbuild -->
+    <script
+      src="https://code.jquery.com/jquery-3.5.1.min.js"
+      integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
+      crossorigin="anonymous"></script>
 
-    <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
-    <script>
-      (function(b,o,i,l,e,r){b.GoogleAnalyticsObject=l;b[l]||(b[l]=
-      function(){(b[l].q=b[l].q||[]).push(arguments)});b[l].l=+new Date;
-      e=o.createElement(i);r=o.getElementsByTagName(i)[0];
-      e.src='//www.google-analytics.com/analytics.js';
-      r.parentNode.insertBefore(e,r)}(window,document,'script','ga'));
-      ga('create','UA-XXXXX-X');ga('send','pageview');
-    </script>
+    <script src="scripts/camera.js"></script>
 
-    <!-- build:js scripts/main.js -->
     <script src="scripts/imageUtils.js"></script>
     <script src="scripts/edges.js"></script>
-    <script src="scripts/hough.js"></script>
+    <!-- <script src="scripts/hough.js"></script> -->
     <script src="scripts/main.js"></script>
-    <!-- endbuild -->
 </body>
 </html>
